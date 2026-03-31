@@ -19,10 +19,17 @@ app.get("/api/quote", async (req, res) => {
   const { symbols } = req.query;
   if(!symbols) return res.status(400).json({ error: "symbols query param required" });
   try {
-    const url = `${TD_BASE}/quote?symbol=${encodeURIComponent(symbols)}&apikey=${TD_KEY}`;
-    const r   = await fetch(url);
-    const data = await r.json();
-    res.json(data);
+    const symList = symbols.split(",");
+    // Fetch each symbol individually and return as {SYM: data} object
+    // This avoids Twelve Data's inconsistent single vs batch response shape
+    const results = {};
+    for(const sym of symList){
+      const url = `${TD_BASE}/quote?symbol=${encodeURIComponent(sym.trim())}&apikey=${TD_KEY}`;
+      const r   = await fetch(url);
+      const data = await r.json();
+      results[sym.trim()] = data;
+    }
+    res.json(results);
   } catch(e) {
     console.error("Quote fetch error:", e.message);
     res.status(500).json({ error: e.message });
