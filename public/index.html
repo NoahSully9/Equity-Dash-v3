@@ -219,40 +219,41 @@ async function loadAll(){
   if(busy) return;
   busy=true; setBtn(true); hideErr();
 
-  // Step 1: batch quote — 1 API call for all tickers
+  // Step 1: batch quote
   let quotes={};
   try{
     setStatus("Fetching quotes…");
-    quotes = await fetchBatchQuote(TICKERS);
+    const r = await fetch(`/api/quote?symbols=${encodeURIComponent(TICKERS.join(","))}`);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    quotes = await r.json();
+    if(quotes.error) throw new Error(quotes.error);
   }catch(e){
     showErr("Quote fetch failed: "+e.message);
-    busy=false; setBtn(false); setStatus("");
+    busy=false; setBtn(false);
+    document.getElementById("ticker-tbody").innerHTML=
+      '<tr><td colspan="6"><div class="dim">Failed to load — try refreshing</div></td></tr>';
     return;
   }
 
-  // Render table immediately from quotes alone so it's never stuck
-  tickerData = TICKERS.map(s => enrichQuote(s, quotes[s], null));
+  // Render immediately from quotes, no history yet
+  tickerData = TICKERS.map(s => enrichQuote(s, quotes[s]||null, null));
   renderTable(); renderAlerts(); renderDetail();
+  busy=false; setBtn(false);
+  document.getElementById("last-updated").textContent="Updated "+new Date().toLocaleTimeString();
 
-  // Step 2: daily history for avg volume — parallel, 8s timeout each
-  setStatus(""); // clear spinner, table already visible
-  const dailyResults = await Promise.allSettled(
-    TICKERS.map(sym =>
-      Promise.race([
-        fetchDaily(sym),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
-      ])
-    )
-  );
-  const dailyMap = {};
-  TICKERS.forEach((sym, i) => {
-    dailyMap[sym] = dailyResults[i].status === "fulfilled" ? dailyResults[i].value : null;
+  // Step 2: history in background — updates table when done, doesn't block
+  Promise.allSettled(TICKERS.map(sym =>
+    fetch(`/api/daily/${encodeURIComponent(sym)}`).then(r=>r.json()).catch(()=>null)
+  )).then(results => {
+    const dailyMap={};
+    TICKERS.forEach((sym,i)=>{
+      dailyMap[sym] = results[i].status==="fulfilled" ? results[i].value : null;
+    });
+    tickerData = TICKERS.map(s => enrichQuote(s, quotes[s]||null, dailyMap[s]||null));
+    renderTable(); renderAlerts(); renderDetail();
   });
 
-  tickerData = TICKERS.map(s => enrichQuote(s, quotes[s], dailyMap[s]||null));
-  renderTable(); renderAlerts(); renderDetail();
-  document.getElementById("last-updated").textContent="Updated "+new Date().toLocaleTimeString();
-  busy=false; setBtn(false); setStatus("");
+  // Step 3: chart for selected ticker
   doChart(selected);
 }
 
