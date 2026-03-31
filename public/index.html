@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<!-- saved from url=(0064)file:///Users/noahsullivan/Downloads/equity_dashboard%20(3).html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equity Intelligence Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --ink:#0f0f0f; --ink-2:#3a3a3a; --ink-3:#6b6b6b; --ink-4:#9b9b9b;
+    --rule:#e2e2e2; --rule-s:#c8c8c8; --bg:#fafaf8; --bg-2:#f2f1ee;
+    --accent:#1a43c8; --accent-l:#e8edfb;
+    --green:#16a34a; --green-l:#dcfce7;
+    --red:#dc2626; --red-l:#fee2e2;
+    --amber:#b45309; --amber-l:#fef3c7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px;line-height:1.6;color:var(--ink);background:var(--bg);}
+
+  /* Header */
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:2px solid var(--ink);background:#fff;flex-wrap:wrap;gap:10px;}
+  header h1{font-size:18px;font-weight:600;letter-spacing:-0.01em;}
+  header h1 span{font-weight:300;}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  .ts{font-size:11px;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;}
+  .btn{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:6px 14px;border-radius:4px;border:1px solid var(--rule-s);background:var(--bg-2);cursor:pointer;color:var(--ink-2);}
+  .btn-primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+  /* Banners */
+  #error-banner{display:none;background:var(--red-l);color:var(--red);border-bottom:1px solid #fca5a5;padding:10px 20px;font-size:13px;}
+
+  /* Alert feed */
+  #alert-feed{padding:16px 20px;border-bottom:1px solid var(--rule);}
+  .st{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;}
+  .alert-row{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(--rule);font-size:12.5px;}
+  .alert-row:last-child{border-bottom:none;}
+  .pill{display:inline-block;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:1px 7px;border-radius:3px;font-weight:500;}
+  .pr{background:var(--red-l);color:var(--red);}
+  .pa{background:var(--amber-l);color:var(--amber);}
+  .up{color:var(--green);} .dn{color:var(--red);}
+
+  /* Universe table */
+  #universe{padding:0 20px 20px;}
+  .tc{display:flex;align-items:center;gap:10px;padding:14px 0 12px;flex-wrap:wrap;}
+  .tc select{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:4px 10px;border:1px solid var(--rule-s);border-radius:4px;background:var(--bg-2);color:var(--ink-2);}
+  table{width:100%;border-collapse:collapse;}
+  thead th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--rule-s);padding:6px 10px 7px 0;font-weight:500;}
+  tbody td{padding:9px 10px 9px 0;border-bottom:1px solid var(--rule);vertical-align:middle;}
+  tbody tr{cursor:pointer;transition:background 0.15s;}
+  tbody tr:hover{background:var(--bg-2);}
+  tbody tr.sel{background:var(--accent-l);}
+  tbody tr:last-child td{border-bottom:none;}
+  .str{height:4px;background:#e2e2e2;border-radius:2px;overflow:hidden;width:80px;}
+  .sfi{height:100%;border-radius:2px;}
+  .sg{background:#22c55e;} .sa{background:#f59e0b;} .sr{background:#ef4444;} .sb{background:#3b82f6;}
+  .srow{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;}
+  .bgs{display:flex;gap:4px;flex-wrap:wrap;}
+
+  /* Detail panel */
+  #detail{padding:20px;border-top:2px solid var(--rule);}
+  .dh{display:flex;align-items:baseline;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+  .dt{font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+  .dp{font-size:28px;font-weight:300;font-family:'IBM Plex Mono',monospace;}
+  .dc{font-size:18px;font-family:'IBM Plex Mono',monospace;}
+  .dg{display:grid;grid-template-columns:1fr 280px;gap:24px;}
+  #price-chart{width:100%;height:180px;display:block;background:var(--bg-2);border-radius:6px;}
+  .sb2{margin-bottom:16px;}
+  .sl{font-size:11px;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;display:flex;justify-content:space-between;}
+  .strl{height:6px;background:#e2e2e2;border-radius:3px;overflow:hidden;}
+  .dd{width:100%;border-collapse:collapse;margin-top:20px;}
+  .dd td{padding:5px 0;border-bottom:1px solid var(--rule);font-size:12.5px;}
+  .dd td:first-child{color:var(--ink-3);font-family:'IBM Plex Mono',monospace;font-size:11px;padding-right:12px;}
+  .dd td:last-child{font-family:'IBM Plex Mono',monospace;font-weight:500;text-align:right;}
+  .dd tr:last-child td{border-bottom:none;}
+  .sli{font-size:12px;padding:5px 0;border-bottom:1px solid var(--rule);display:flex;gap:8px;align-items:baseline;}
+  .sli:last-child{border-bottom:none;}
+
+  .spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--rule);border-top-color:var(--ink);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .dim{color:var(--ink-3);font-size:12px;padding:10px 0;}
+  @media(max-width:700px){.dg{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Equity <span>Intelligence</span> Dashboard</h1>
+  <div class="header-right">
+    <span id="last-updated" class="ts">Not loaded</span>
+    <button class="btn btn-primary" id="refresh-btn" onclick="onRefresh()">↻ Refresh</button>
+  </div>
+</header>
+
+<div id="error-banner" style="display: block;">Quote fetch failed: Failed to fetch</div>
+
+<div id="alert-feed">
+  <div class="st">🔴 Active Alerts</div>
+  <div id="alert-list"><div class="dim">Waiting…</div></div>
+</div>
+
+<div id="universe">
+  <div class="tc">
+    <span class="st" style="margin:0">Universe</span>
+    <select id="sort-by" onchange="renderTable()">
+      <option value="ticker">Sort: Ticker</option>
+      <option value="change">Sort: Change%</option>
+      <option value="crowding">Sort: Crowding</option>
+      <option value="fragility">Sort: Fragility</option>
+      <option value="signals">Sort: Signals</option>
+    </select>
+    <select id="filter-by" onchange="renderTable()">
+      <option value="all">Filter: All</option>
+      <option value="alerts">Filter: Alerts Only</option>
+      <option value="crowded">Filter: Crowded (&gt;60)</option>
+    </select>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th><th>Price</th><th>Change%</th>
+        <th>Crowding</th><th>Fragility</th><th>Signals</th>
+      </tr>
+    </thead>
+    <tbody id="ticker-tbody"><tr><td colspan="6"><div class="dim"><span class="spinner"></span> </div></td></tr></tbody>
+  </table>
+</div>
+
+<div id="detail">
+  <div class="st">Detail Panel</div>
+  <div id="detail-content"><div class="dim">Select a ticker after data loads.</div></div>
+</div>
+
+<script>
+const TICKERS = ["SI","CMPX","IONQ","CRCL","FLGC","BRZE","SERV","BETR","AIRE"];
+
+let tickerData = [];
+let selected   = TICKERS[0];
+let chartData  = [];
+let busy       = false;
+
+// ── Utils ──
+const f2    = n => n==null?"—":(+n).toFixed(2);
+const fpct  = n => n==null?"—":(n>=0?"+":"")+(+n).toFixed(2)+"%";
+const fvol  = n => n==null?"—":n>=1e6?(n/1e6).toFixed(2)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);
+const cc    = n => n==null?"":n>=0?"up":"dn";
+const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+// ── Signal engine ──
+function calcFrag(hi,lo,prev,price){
+  if([hi,lo,prev,price].some(v=>!v)) return 0;
+  return clamp(((hi-lo)/prev*100)*8+((hi-price)/hi*100)*2,0,100);
+}
+function calcCrowd(vr,absPct){
+  return clamp(clamp((vr-1)*25,0,60)+clamp(absPct*4,0,40),0,100);
+}
+function calcSigs(d){
+  const vr=d.vr??1,ab=Math.abs(d.changePercent??0),fr=d.fragility??0,s=[];
+  if(vr>4)         s.push({label:"Volume spike",  sev:"high"});
+  else if(vr>2.5)  s.push({label:"Volume spike",  sev:"med"});
+  if(ab>8)         s.push({label:"Large move",     sev:"high"});
+  if(fr>75)        s.push({label:"High fragility", sev:"high"});
+  if(ab>5&&vr<1.2) s.push({label:"Low-vol move",   sev:"med"});
+  return s;
+}
+
+// ── API calls to our own server ──
+async function fetchBatchQuote(symbols){
+  const r = await fetch(`/api/quote?symbols=${encodeURIComponent(symbols.join(","))}`);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data = await r.json();
+  if(data.error) throw new Error(data.error);
+  if(symbols.length===1){const o={};o[symbols[0]]=data;return o;}
+  return data;
+}
+async function fetchDaily(sym){
+  const r = await fetch(`/api/daily/${encodeURIComponent(sym)}`);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+async function fetchIntraday(sym){
+  const r = await fetch(`/api/intraday/${encodeURIComponent(sym)}`);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── Enrich one quote ──
+function enrichQuote(sym,q,daily){
+  if(!q||q.status==="error"||!q.close) return {
+    symbol:sym,price:null,changePercent:null,volume:null,
+    avgVolume10d:null,dayHigh:null,dayLow:null,prevClose:null,
+    week52High:null,week52Low:null,vr:1,fragility:0,crowding:0,
+    sigs:[],error:q?.message||"No data"
+  };
+  const price  = parseFloat(q.close)||null;
+  const hi     = parseFloat(q.high)||null;
+  const lo     = parseFloat(q.low)||null;
+  const prev   = parseFloat(q.previous_close)||null;
+  const chgPct = parseFloat(q.percent_change)||null;
+  const vol    = parseFloat(q.volume)||null;
+  const w52h   = parseFloat(q.fifty_two_week?.high)||null;
+  const w52l   = parseFloat(q.fifty_two_week?.low)||null;
+  const bars   = daily?.values||[];
+  const avgVol = bars.length?bars.reduce((s,b)=>s+(parseFloat(b.volume)||0),0)/bars.length:null;
+  const vr     = (vol&&avgVol)?vol/avgVol:1;
+  const fr     = calcFrag(hi,lo,prev,price);
+  const cr     = calcCrowd(vr,Math.abs(chgPct??0));
+  const d      = {symbol:sym,price,changePercent:chgPct,volume:vol,avgVolume10d:avgVol,
+    dayHigh:hi,dayLow:lo,prevClose:prev,week52High:w52h,week52Low:w52l,vr,fragility:fr,crowding:cr};
+  d.sigs = calcSigs(d);
+  return d;
+}
+
+// ── Load all data ──
+async function loadAll(){
+  if(busy) return;
+  busy=true; setBtn(true); hideErr();
+
+  // Step 1: batch quote — 1 API call for all tickers
+  let quotes={};
+  try{
+    setStatus("Fetching quotes…");
+    quotes = await fetchBatchQuote(TICKERS);
+  }catch(e){
+    showErr("Quote fetch failed: "+e.message);
+    busy=false; setBtn(false); setStatus("");
+    return;
+  }
+
+  // Step 2: daily history for avg volume — 1 call per ticker
+  const dailyMap={};
+  for(let i=0;i<TICKERS.length;i++){
+    const sym=TICKERS[i];
+    setStatus(`Loading history: ${sym}… (${i+1}/${TICKERS.length})`);
+    try{ dailyMap[sym]=await fetchDaily(sym); }
+    catch(_){ dailyMap[sym]=null; }
+    // Render progressively
+    tickerData=TICKERS.map(s=>enrichQuote(s,quotes[s],dailyMap[s]||null));
+    renderTable(); renderAlerts();
+    if(i<TICKERS.length-1) await sleep(300);
+  }
+
+  tickerData=TICKERS.map(s=>enrichQuote(s,quotes[s],dailyMap[s]||null));
+  renderTable(); renderAlerts(); renderDetail();
+  document.getElementById("last-updated").textContent="Updated "+new Date().toLocaleTimeString();
+  busy=false; setBtn(false); setStatus("");
+  doChart(selected);
+}
+
+async function doChart(sym){
+  chartData=[]; renderDetail();
+  try{
+    const raw=await fetchIntraday(sym);
+    chartData=(raw.values||[])
+      .reverse()
+      .map(b=>({t:new Date(b.datetime).getTime(),v:parseFloat(b.close)}))
+      .filter(b=>b.v&&!isNaN(b.v));
+  }catch(_){ chartData=[]; }
+  renderDetail();
+}
+
+function onRefresh(){ if(!busy) loadAll(); }
+
+// ── Render ──
+function scoreCol(v){ return v>75?"sr":v>40?"sa":"sg"; }
+
+function setStatus(msg){
+  document.getElementById("ticker-tbody").innerHTML=
+    `<tr><td colspan="6"><div class="dim"><span class="spinner"></span> ${msg}</div></td></tr>`;
+}
+
+function renderAlerts(){
+  const alerts=tickerData.flatMap(d=>
+    (d.sigs||[]).filter(s=>s.sev==="high").map(s=>({sym:d.symbol,label:s.label}))
+  );
+  document.getElementById("alert-list").innerHTML=alerts.length
+    ?alerts.slice(0,8).map(a=>`
+        <div class="alert-row">
+          <span style="font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:12px;min-width:48px">${a.sym}</span>
+          <span style="color:var(--ink-2)">${a.label}</span>
+          <span class="pill pr">high</span>
+        </div>`).join("")
+    :'<div class="dim">No high-severity alerts</div>';
+}
+
+function renderTable(){
+  const sort=document.getElementById("sort-by").value;
+  const filt=document.getElementById("filter-by").value;
+  let data=[...tickerData];
+  if(filt==="alerts")  data=data.filter(d=>(d.sigs||[]).length>0);
+  if(filt==="crowded") data=data.filter(d=>d.crowding>60);
+  if(sort==="change")    data.sort((a,b)=>(b.changePercent??-999)-(a.changePercent??-999));
+  else if(sort==="crowding")  data.sort((a,b)=>b.crowding-a.crowding);
+  else if(sort==="fragility") data.sort((a,b)=>b.fragility-a.fragility);
+  else if(sort==="signals")   data.sort((a,b)=>(b.sigs||[]).length-(a.sigs||[]).length);
+  else data.sort((a,b)=>a.symbol.localeCompare(b.symbol));
+
+  const tbody=document.getElementById("ticker-tbody");
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="6"><div class="dim">No tickers match filter</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML=data.map(d=>{
+    const badges=(d.sigs||[]).map(s=>
+      `<span class="pill ${s.sev==="high"?"pr":"pa"}">${s.label}</span>`
+    ).join(" ");
+    return `<tr class="${d.symbol===selected?"sel":""}" onclick="selectTicker('${d.symbol}')">
+      <td style="font-family:'IBM Plex Mono',monospace;font-weight:600">
+        ${d.symbol}${d.error?` <span style="color:var(--red);font-size:10px" title="${d.error}">⚠</span>`:""}
+      </td>
+      <td style="font-family:'IBM Plex Mono',monospace">${d.price!=null?"$"+f2(d.price):"—"}</td>
+      <td style="font-family:'IBM Plex Mono',monospace" class="${cc(d.changePercent)}">${fpct(d.changePercent)}</td>
+      <td><div class="srow"><div class="str"><div class="sfi ${scoreCol(d.crowding)}" style="width:${(d.crowding||0).toFixed(0)}%"></div></div><span>${(d.crowding||0).toFixed(0)}</span></div></td>
+      <td><div class="srow"><div class="str"><div class="sfi ${scoreCol(d.fragility)}" style="width:${(d.fragility||0).toFixed(0)}%"></div></div><span>${(d.fragility||0).toFixed(0)}</span></div></td>
+      <td><div class="bgs">${badges||'<span style="color:var(--ink-4);font-size:11px">—</span>'}</div></td>
+    </tr>`;
+  }).join("");
+}
+
+function selectTicker(sym){
+  selected=sym; chartData=[];
+  renderTable(); renderDetail(); doChart(sym);
+}
+
+function renderDetail(){
+  const d=tickerData.find(t=>t.symbol===selected);
+  const el=document.getElementById("detail-content");
+  if(!d){el.innerHTML='<div class="dim">Waiting for data…</div>';return;}
+  const va=clamp(((d.vr||1)-1)*33,0,100);
+  el.innerHTML=`
+    <div class="dh">
+      <span class="dt">${d.symbol}</span>
+      <span class="dp">${d.price!=null?"$"+f2(d.price):"—"}</span>
+      <span class="dc ${cc(d.changePercent)}">${fpct(d.changePercent)}</span>
+      ${d.error?`<span style="font-size:11px;color:var(--red)">⚠ ${d.error}</span>`:""}
+    </div>
+    <div class="dg">
+      <div>
+        <canvas id="price-chart"></canvas>
+        ${!chartData.length?'<div class="dim" style="text-align:center;margin-top:6px">No intraday data — market may be closed</div>':""}
+        <div style="margin-top:14px">
+          <div class="st">Signal Log</div>
+          ${(d.sigs||[]).length
+            ?d.sigs.map(s=>`<div class="sli"><span class="pill ${s.sev==="high"?"pr":"pa"}">${s.sev}</span><span>${s.label}</span></div>`).join("")
+            :'<div class="dim">No active signals</div>'}
+        </div>
+      </div>
+      <div>
+        <div class="sb2">
+          <div class="sl"><span>Crowding</span><span>${(d.crowding||0).toFixed(0)}/100</span></div>
+          <div class="strl"><div class="sfi ${scoreCol(d.crowding||0)}" style="width:${(d.crowding||0).toFixed(0)}%"></div></div>
+        </div>
+        <div class="sb2">
+          <div class="sl"><span>Fragility</span><span>${(d.fragility||0).toFixed(0)}/100</span></div>
+          <div class="strl"><div class="sfi ${scoreCol(d.fragility||0)}" style="width:${(d.fragility||0).toFixed(0)}%"></div></div>
+        </div>
+        <div class="sb2">
+          <div class="sl"><span>Volume Anomaly</span><span>${va.toFixed(0)}/100</span></div>
+          <div class="strl"><div class="sfi sb" style="width:${va.toFixed(0)}%"></div></div>
+        </div>
+        <table class="dd">
+          <tr><td>Day Range</td><td>${d.dayLow&&d.dayHigh?"$"+f2(d.dayLow)+" – $"+f2(d.dayHigh):"—"}</td></tr>
+          <tr><td>Prev Close</td><td>${d.prevClose?"$"+f2(d.prevClose):"—"}</td></tr>
+          <tr><td>52W High</td><td>${d.week52High?"$"+f2(d.week52High):"—"}</td></tr>
+          <tr><td>52W Low</td><td>${d.week52Low?"$"+f2(d.week52Low):"—"}</td></tr>
+          <tr><td>Volume</td><td>${fvol(d.volume)}</td></tr>
+          <tr><td>Avg Vol 10d</td><td>${fvol(d.avgVolume10d)}</td></tr>
+          <tr><td>Vol Ratio</td><td>${d.vr?(+d.vr).toFixed(2)+"×":"—"}</td></tr>
+        </table>
+      </div>
+    </div>`;
+  requestAnimationFrame(()=>{
+    const cv=document.getElementById("price-chart");
+    if(cv&&chartData.length>1) drawChart(cv,chartData,d.changePercent);
+  });
+}
+
+function drawChart(canvas,data,chgPct){
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
+  const ctx=canvas.getContext("2d");
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const vals=data.map(d=>d.v);
+  const mn=Math.min(...vals)*0.998,mx=Math.max(...vals)*1.002;
+  const pad={t:12,b:24,l:60,r:8};
+  const toX=i=>pad.l+(i/(vals.length-1))*(W-pad.l-pad.r);
+  const toY=v=>pad.t+(H-pad.t-pad.b)*(1-(v-mn)/(mx-mn));
+  const isUp=(chgPct??0)>=0,lc=isUp?"#22c55e":"#ef4444";
+  ctx.font="10px 'IBM Plex Mono',monospace";
+  ctx.fillStyle="#9b9b9b"; ctx.textAlign="right";
+  for(let i=0;i<=4;i++){
+    const v=mn+(mx-mn)*(i/4),y=toY(v);
+    ctx.strokeStyle="rgba(0,0,0,0.06)"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    ctx.fillText("$"+f2(v),pad.l-4,y+3.5);
+  }
+  ctx.beginPath();
+  ctx.moveTo(toX(0),toY(vals[0]));
+  vals.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)));
+  ctx.lineTo(toX(vals.length-1),H-pad.b); ctx.lineTo(toX(0),H-pad.b);
+  ctx.closePath();
+  ctx.fillStyle=isUp?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)"; ctx.fill();
+  ctx.beginPath(); ctx.strokeStyle=lc; ctx.lineWidth=1.5; ctx.lineJoin="round";
+  vals.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));
+  ctx.stroke();
+  ctx.fillStyle="#9b9b9b"; ctx.textAlign="center";
+  [0,0.25,0.5,0.75,1].forEach(frac=>{
+    const idx=Math.round(frac*(data.length-1));
+    const t=data[idx]?.t; if(!t) return;
+    ctx.fillText(new Date(t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),toX(idx),H-6);
+  });
+}
+
+function setBtn(on){
+  const b=document.getElementById("refresh-btn");
+  b.disabled=on;
+  b.innerHTML=on?'<span class="spinner"></span> Loading…':'↻ Refresh';
+}
+function showErr(m){const b=document.getElementById("error-banner");b.textContent=m;b.style.display="block";}
+function hideErr(){document.getElementById("error-banner").style.display="none";}
+
+window.addEventListener("load",()=>setTimeout(onRefresh,300));
+</script>
+
+
+</body></html>

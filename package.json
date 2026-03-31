@@ -1,0 +1,16 @@
+{
+  "name": "equity-dashboard",
+  "version": "1.0.0",
+  "description": "Equity Intelligence Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0"
+  }
+}
