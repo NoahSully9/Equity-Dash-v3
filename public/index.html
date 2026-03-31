@@ -230,9 +230,20 @@ async function loadAll(){
     return;
   }
 
-  // Step 2: daily history for avg volume — fetch all in parallel
-  setStatus("Loading history…");
-  const dailyResults = await Promise.allSettled(TICKERS.map(sym => fetchDaily(sym)));
+  // Render table immediately from quotes alone so it's never stuck
+  tickerData = TICKERS.map(s => enrichQuote(s, quotes[s], null));
+  renderTable(); renderAlerts(); renderDetail();
+
+  // Step 2: daily history for avg volume — parallel, 8s timeout each
+  setStatus(""); // clear spinner, table already visible
+  const dailyResults = await Promise.allSettled(
+    TICKERS.map(sym =>
+      Promise.race([
+        fetchDaily(sym),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
+      ])
+    )
+  );
   const dailyMap = {};
   TICKERS.forEach((sym, i) => {
     dailyMap[sym] = dailyResults[i].status === "fulfilled" ? dailyResults[i].value : null;
