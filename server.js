@@ -6,11 +6,15 @@ const PORT = process.env.PORT || 3000;
 const TD_KEY  = process.env.TD_API_KEY;
 const TD_BASE = "https://api.twelvedata.com";
 
-// Health check — Railway pings this to confirm the app is alive
+if(!TD_KEY) console.warn("WARNING: TD_API_KEY not set");
+
+// Health check
 app.get("/health", (req, res) => res.status(200).send("OK"));
 
+// Static files
 app.use(express.static(path.join(__dirname, "public")));
 
+// Batch quote
 app.get("/api/quote", async (req, res) => {
   const { symbols } = req.query;
   if(!symbols) return res.status(400).json({error:"symbols required"});
@@ -23,6 +27,7 @@ app.get("/api/quote", async (req, res) => {
   } catch(e){ res.status(500).json({error:e.message}); }
 });
 
+// Daily bars
 app.get("/api/daily/:symbol", async (req, res) => {
   try {
     const r = await fetch(`${TD_BASE}/time_series?symbol=${encodeURIComponent(req.params.symbol)}&interval=1day&outputsize=12&apikey=${TD_KEY}`);
@@ -30,6 +35,7 @@ app.get("/api/daily/:symbol", async (req, res) => {
   } catch(e){ res.json({values:[]}); }
 });
 
+// Intraday chart
 app.get("/api/intraday/:symbol", async (req, res) => {
   try {
     const r = await fetch(`${TD_BASE}/time_series?symbol=${encodeURIComponent(req.params.symbol)}&interval=5min&outputsize=80&apikey=${TD_KEY}`);
