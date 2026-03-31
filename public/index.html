@@ -48,6 +48,12 @@
   .sg{background:#22c55e;} .sa{background:#f59e0b;} .sr{background:#ef4444;} .sb{background:#3b82f6;}
   .srow{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;}
   .bgs{display:flex;gap:4px;flex-wrap:wrap;}
+  /* Tooltips */
+  .th-wrap{position:relative;display:inline-block;cursor:help;}
+  .th-wrap .tooltip{display:none;position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:11px;font-family:'IBM Plex Sans',system-ui,sans-serif;font-weight:400;text-transform:none;letter-spacing:0;line-height:1.5;padding:8px 12px;border-radius:5px;width:220px;z-index:100;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.2);}
+  .th-wrap .tooltip::before{content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:var(--ink);}
+  .th-wrap:hover .tooltip{display:block;}
+  /* Detail */
   #detail{padding:20px;border-top:2px solid var(--rule);}
   .dh{display:flex;align-items:baseline;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
   .dt{font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
@@ -65,26 +71,20 @@
   .dd tr:last-child td{border-bottom:none;}
   .sli{font-size:12px;padding:5px 0;border-bottom:1px solid var(--rule);display:flex;gap:8px;align-items:baseline;}
   .sli:last-child{border-bottom:none;}
-  /* Tooltips */
-  .th-wrap{position:relative;display:inline-block;cursor:help;}
-  .th-wrap .tooltip{
-    display:none;position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
-    background:var(--ink);color:#fff;font-size:11px;font-family:'IBM Plex Sans',system-ui,sans-serif;
-    font-weight:400;text-transform:none;letter-spacing:0;line-height:1.5;
-    padding:8px 12px;border-radius:5px;width:220px;z-index:100;pointer-events:none;
-    box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  }
-  .th-wrap .tooltip::before{
-    content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
-    border:5px solid transparent;border-bottom-color:var(--ink);
-  }
-  .th-wrap:hover .tooltip{display:block;}
+  /* News */
+  .news-item{padding:8px 0;border-bottom:1px solid var(--rule);}
+  .news-item:last-child{border-bottom:none;}
+  .news-title a{font-size:13px;color:var(--ink);text-decoration:none;line-height:1.4;display:block;margin-bottom:3px;}
+  .news-title a:hover{text-decoration:underline;}
+  .news-meta{font-size:11px;color:var(--ink-4);font-family:'IBM Plex Mono',monospace;}
+  .spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--rule);border-top-color:var(--ink);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .dim{color:var(--ink-3);font-size:12px;padding:10px 0;}
   @media(max-width:700px){.dg{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
+
 <header>
   <h1>Equity <span>Intelligence</span> Dashboard</h1>
   <div class="header-right">
@@ -92,11 +92,14 @@
     <button class="btn btn-primary" id="refresh-btn" onclick="onRefresh()">↻ Refresh</button>
   </div>
 </header>
+
 <div id="error-banner"></div>
+
 <div id="alert-feed">
   <div class="st">🔴 Active Alerts</div>
   <div id="alert-list"><div class="dim">Waiting…</div></div>
 </div>
+
 <div id="universe">
   <div class="tc">
     <span class="st" style="margin:0">Universe</span>
@@ -122,19 +125,24 @@
       <th><span class="th-wrap">Fragility<span class="tooltip">Measures intraday instability. Combines day range width vs prev close and distance from day high. High score = wide range trading near lows — a fragile setup.</span></span></th>
       <th><span class="th-wrap">Signals<span class="tooltip">Volume spike: vol 2.5–4× avg (med) or 4×+ (high). Large move: day change &gt;8% (high). High fragility: score &gt;75 (high). Low-vol move: &gt;5% move on thin volume (med).</span></span></th>
     </tr></thead>
-    <tbody id="ticker-tbody"><tr><td colspan="6"><div class="dim">Waiting for data…</div></td></tr></tbody>
+    <tbody id="ticker-tbody">
+      <tr><td colspan="6"><div class="dim">Waiting for data…</div></td></tr>
+    </tbody>
   </table>
 </div>
+
 <div id="detail">
   <div class="st">Detail Panel</div>
   <div id="detail-content"><div class="dim">Select a ticker after data loads.</div></div>
 </div>
 
 <script>
-const TICKERS = ["SI","CMPX","IONQ","CRCL","FLGC","BRZE","SERV","BETR","XNDU","AIRE"];
+const TICKERS = ["SI","CMPX","IONQ","CRCL","FLGC","BRZE","SERV","BETR","AIRE"];
+
 let tickerData = [];
 let selected   = TICKERS[0];
 let chartData  = [];
+let newsData   = [];
 let busy       = false;
 
 const f2    = n => n==null ? "—" : (+n).toFixed(2);
@@ -142,7 +150,6 @@ const fpct  = n => n==null ? "—" : (n>=0?"+":"")+(+n).toFixed(2)+"%";
 const fvol  = n => n==null ? "—" : n>=1e6?(n/1e6).toFixed(2)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);
 const cc    = n => n==null ? "" : n>=0 ? "up" : "dn";
 const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function calcFrag(hi,lo,prev,price){
   if(hi==null||lo==null||prev==null||price==null||prev===0) return 0;
@@ -162,15 +169,14 @@ function calcSigs(d){
 }
 
 function enrichQuote(sym, q, daily){
-  console.log("enrichQuote", sym, q);
-  if(q==null || q.price==null){
+  if(q==null||q.price==null){
     return {symbol:sym,price:null,changePercent:null,volume:null,
       avgVolume10d:null,dayHigh:null,dayLow:null,prevClose:null,
       week52High:null,week52Low:null,vr:1,fragility:0,crowding:0,sigs:[],error:"No data"};
   }
   const price  = q.price;
-  const hi     = q.dayHigh      ?? null;
-  const lo     = q.dayLow       ?? null;
+  const hi     = q.dayHigh       ?? null;
+  const lo     = q.dayLow        ?? null;
   const prev   = q.previousClose ?? null;
   const chgPct = q.changePercent ?? null;
   const vol    = q.volume        ?? null;
@@ -187,6 +193,7 @@ function enrichQuote(sym, q, daily){
   return d;
 }
 
+// ── API calls ──
 async function loadAll(){
   if(busy) return;
   busy=true; setBtn(true); hideErr();
@@ -197,7 +204,6 @@ async function loadAll(){
     const r = await fetch("/api/quote?symbols="+encodeURIComponent(TICKERS.join(",")));
     if(!r.ok) throw new Error("HTTP "+r.status);
     quotes = await r.json();
-    console.log("Quotes loaded:", Object.keys(quotes));
   }catch(e){
     showErr("Quote fetch failed: "+e.message);
     busy=false; setBtn(false);
@@ -220,6 +226,7 @@ async function loadAll(){
   });
 
   doChart(selected);
+  doNews(selected);
 }
 
 async function doChart(sym){
@@ -232,7 +239,20 @@ async function doChart(sym){
   renderDetail();
 }
 
+async function doNews(sym){
+  newsData=[];
+  const el=document.getElementById("news-feed");
+  if(el) el.innerHTML='<div class="dim"><span class="spinner"></span> Loading news…</div>';
+  try{
+    const r = await fetch("/api/news/"+encodeURIComponent(sym));
+    newsData = await r.json();
+  }catch(_){ newsData=[]; }
+  renderNews();
+}
+
 function onRefresh(){ if(!busy) loadAll(); }
+
+// ── Render ──
 function scoreCol(v){ return v>75?"sr":v>40?"sa":"sg"; }
 
 function renderAlerts(){
@@ -269,8 +289,23 @@ function renderTable(){
 }
 
 function selectTicker(sym){
-  selected=sym; chartData=[];
-  renderTable(); renderDetail(); doChart(sym);
+  selected=sym; chartData=[]; newsData=[];
+  renderTable(); renderDetail(); doChart(sym); doNews(sym);
+}
+
+function renderNews(){
+  const el=document.getElementById("news-feed");
+  if(!el) return;
+  if(!newsData.length){el.innerHTML='<div class="dim">No recent news</div>';return;}
+  const now=Date.now()/1000;
+  el.innerHTML=newsData.map(n=>{
+    const age=now-n.published;
+    const t=age<3600?Math.round(age/60)+"m ago":age<86400?Math.round(age/3600)+"h ago":Math.round(age/86400)+"d ago";
+    return `<div class="news-item">
+      <div class="news-title"><a href="${n.url}" target="_blank" rel="noopener">${n.title}</a></div>
+      <div class="news-meta">${n.source} · ${t}</div>
+    </div>`;
+  }).join("");
 }
 
 function renderDetail(){
@@ -292,6 +327,10 @@ function renderDetail(){
         <div style="margin-top:14px">
           <div class="st">Signal Log</div>
           ${(d.sigs||[]).length?d.sigs.map(s=>`<div class="sli"><span class="pill ${s.sev==="high"?"pr":"pa"}">${s.sev}</span><span>${s.label}</span></div>`).join(""):'<div class="dim">No active signals</div>'}
+        </div>
+        <div style="margin-top:18px">
+          <div class="st">News</div>
+          <div id="news-feed"><div class="dim"><span class="spinner"></span> Loading…</div></div>
         </div>
       </div>
       <div>
