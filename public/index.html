@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0064)file:///Users/noahsullivan/Downloads/equity_dashboard%20(3).html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Equity Intelligence Dashboard</title>
 <style>
@@ -92,7 +92,7 @@
   </div>
 </header>
 
-<div id="error-banner" style="display: block;">Quote fetch failed: Failed to fetch</div>
+<div id="error-banner"></div>
 
 <div id="alert-feed">
   <div class="st">🔴 Active Alerts</div>
@@ -122,7 +122,9 @@
         <th>Crowding</th><th>Fragility</th><th>Signals</th>
       </tr>
     </thead>
-    <tbody id="ticker-tbody"><tr><td colspan="6"><div class="dim"><span class="spinner"></span> </div></td></tr></tbody>
+    <tbody id="ticker-tbody">
+      <tr><td colspan="6"><div class="dim">Waiting for data…</div></td></tr>
+    </tbody>
   </table>
 </div>
 
@@ -228,20 +230,15 @@ async function loadAll(){
     return;
   }
 
-  // Step 2: daily history for avg volume — 1 call per ticker
-  const dailyMap={};
-  for(let i=0;i<TICKERS.length;i++){
-    const sym=TICKERS[i];
-    setStatus(`Loading history: ${sym}… (${i+1}/${TICKERS.length})`);
-    try{ dailyMap[sym]=await fetchDaily(sym); }
-    catch(_){ dailyMap[sym]=null; }
-    // Render progressively
-    tickerData=TICKERS.map(s=>enrichQuote(s,quotes[s],dailyMap[s]||null));
-    renderTable(); renderAlerts();
-    if(i<TICKERS.length-1) await sleep(300);
-  }
+  // Step 2: daily history for avg volume — fetch all in parallel
+  setStatus("Loading history…");
+  const dailyResults = await Promise.allSettled(TICKERS.map(sym => fetchDaily(sym)));
+  const dailyMap = {};
+  TICKERS.forEach((sym, i) => {
+    dailyMap[sym] = dailyResults[i].status === "fulfilled" ? dailyResults[i].value : null;
+  });
 
-  tickerData=TICKERS.map(s=>enrichQuote(s,quotes[s],dailyMap[s]||null));
+  tickerData = TICKERS.map(s => enrichQuote(s, quotes[s], dailyMap[s]||null));
   renderTable(); renderAlerts(); renderDetail();
   document.getElementById("last-updated").textContent="Updated "+new Date().toLocaleTimeString();
   busy=false; setBtn(false); setStatus("");
@@ -424,6 +421,5 @@ function hideErr(){document.getElementById("error-banner").style.display="none";
 
 window.addEventListener("load",()=>setTimeout(onRefresh,300));
 </script>
-
-
-</body></html>
+</body>
+</html>
