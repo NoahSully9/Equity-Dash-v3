@@ -65,7 +65,20 @@
   .dd tr:last-child td{border-bottom:none;}
   .sli{font-size:12px;padding:5px 0;border-bottom:1px solid var(--rule);display:flex;gap:8px;align-items:baseline;}
   .sli:last-child{border-bottom:none;}
-  .spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--rule);border-top-color:var(--ink);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;}
+  /* Tooltips */
+  .th-wrap{position:relative;display:inline-block;cursor:help;}
+  .th-wrap .tooltip{
+    display:none;position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:11px;font-family:'IBM Plex Sans',system-ui,sans-serif;
+    font-weight:400;text-transform:none;letter-spacing:0;line-height:1.5;
+    padding:8px 12px;border-radius:5px;width:220px;z-index:100;pointer-events:none;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  }
+  .th-wrap .tooltip::before{
+    content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+    border:5px solid transparent;border-bottom-color:var(--ink);
+  }
+  .th-wrap:hover .tooltip{display:block;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .dim{color:var(--ink-3);font-size:12px;padding:10px 0;}
   @media(max-width:700px){.dg{grid-template-columns:1fr;}}
@@ -101,7 +114,14 @@
     </select>
   </div>
   <table>
-    <thead><tr><th>Ticker</th><th>Price</th><th>Change%</th><th>Crowding</th><th>Fragility</th><th>Signals</th></tr></thead>
+    <thead><tr>
+      <th>Ticker</th>
+      <th>Price</th>
+      <th>Change%</th>
+      <th><span class="th-wrap">Crowding<span class="tooltip">Estimates how crowded the trade is. Combines volume ratio and day move size. High score = heavy activity + big move, suggesting stretched positioning.</span></span></th>
+      <th><span class="th-wrap">Fragility<span class="tooltip">Measures intraday instability. Combines day range width vs prev close and distance from day high. High score = wide range trading near lows — a fragile setup.</span></span></th>
+      <th><span class="th-wrap">Signals<span class="tooltip">Volume spike: vol 2.5–4× avg (med) or 4×+ (high). Large move: day change &gt;8% (high). High fragility: score &gt;75 (high). Low-vol move: &gt;5% move on thin volume (med).</span></span></th>
+    </tr></thead>
     <tbody id="ticker-tbody"><tr><td colspan="6"><div class="dim">Waiting for data…</div></td></tr></tbody>
   </table>
 </div>
