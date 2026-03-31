@@ -11,17 +11,21 @@ if(!TD_KEY) console.warn("WARNING: TD_API_KEY environment variable not set");
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// Batch quote — fetches each symbol individually, returns {SYM: data}
+// Batch quote — fetches all symbols in parallel, returns {SYM: data}
 app.get("/api/quote", async (req, res) => {
   const { symbols } = req.query;
   if(!symbols) return res.status(400).json({error: "symbols required"});
   try {
     const symList = symbols.split(",").map(s => s.trim()).filter(Boolean);
+    const fetches = symList.map(sym =>
+      fetch(`${TD_BASE}/quote?symbol=${encodeURIComponent(sym)}&apikey=${TD_KEY}`)
+        .then(r => r.json())
+        .then(data => ({sym, data}))
+        .catch(e => ({sym, data: {status: "error", message: e.message}}))
+    );
+    const settled = await Promise.all(fetches);
     const results = {};
-    for(const sym of symList){
-      const r = await fetch(`${TD_BASE}/quote?symbol=${encodeURIComponent(sym)}&apikey=${TD_KEY}`);
-      results[sym] = await r.json();
-    }
+    settled.forEach(({sym, data}) => { results[sym] = data; });
     res.json(results);
   } catch(e) {
     console.error("Quote error:", e.message);
