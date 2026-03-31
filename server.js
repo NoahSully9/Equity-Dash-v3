@@ -1,12 +1,13 @@
 const express = require("express");
 const path    = require("path");
 
-const app     = express();
-const PORT    = process.env.PORT || 3000;
+const app  = express();
+const PORT = process.env.PORT || 3000;
 const TD_KEY  = process.env.TD_API_KEY;
 const TD_BASE = "https://api.twelvedata.com";
 
-if(!TD_KEY) console.warn("WARNING: TD_API_KEY not set");
+// Health check — Railway pings this to confirm the app is alive
+app.get("/health", (req, res) => res.status(200).send("OK"));
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -24,16 +25,14 @@ app.get("/api/quote", async (req, res) => {
 
 app.get("/api/daily/:symbol", async (req, res) => {
   try {
-    const url = `${TD_BASE}/time_series?symbol=${encodeURIComponent(req.params.symbol)}&interval=1day&outputsize=12&apikey=${TD_KEY}`;
-    const r = await fetch(url);
+    const r = await fetch(`${TD_BASE}/time_series?symbol=${encodeURIComponent(req.params.symbol)}&interval=1day&outputsize=12&apikey=${TD_KEY}`);
     res.json(await r.json());
   } catch(e){ res.json({values:[]}); }
 });
 
 app.get("/api/intraday/:symbol", async (req, res) => {
   try {
-    const url = `${TD_BASE}/time_series?symbol=${encodeURIComponent(req.params.symbol)}&interval=5min&outputsize=80&apikey=${TD_KEY}`;
-    const r = await fetch(url);
+    const r = await fetch(`${TD_BASE}/time_series?symbol=${encodeURIComponent(req.params.symbol)}&interval=5min&outputsize=80&apikey=${TD_KEY}`);
     res.json(await r.json());
   } catch(e){ res.json({values:[]}); }
 });
